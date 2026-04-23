@@ -460,7 +460,7 @@ hexfall/
 Once the initial implementation is complete:
 
 ```bash
-git clone https://github.com/cvinker/hexfall.git
+git clone https://github.com/chloevinky/TeamFightingCivilzations.git
 cd hexfall
 python -m src.prototype.main
 ```
