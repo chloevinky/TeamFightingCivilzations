@@ -435,20 +435,25 @@ Commands:
 ## Project Structure
 
 ```
-hexfall/
+TeamFightingCivilzations/
 ├── README.md
 ├── LICENSE
-├── requirements.txt              # empty for now, std lib only
+├── requirements.txt              # pygame (for the graphical prototype)
 ├── src/
-│   └── prototype/
+│   ├── __init__.py
+│   ├── main.py                   # text REPL, command parser
+│   ├── config.py                 # tunable constants
+│   ├── game_state.py             # GameState class
+│   ├── shop.py                   # Shop class, generation logic
+│   ├── paths.py                  # path investment, weighting, trait bleed
+│   ├── offerings.py              # data definitions
+│   ├── display.py                # text formatting
+│   └── gui/                      # graphical prototype (pygame)
 │       ├── __init__.py
-│       ├── main.py               # entry point, REPL, command parser
-│       ├── config.py             # tunable constants
-│       ├── game_state.py         # GameState class
-│       ├── shop.py               # Shop class, generation logic
-│       ├── paths.py              # path investment, weighting, trait bleed
-│       ├── offerings.py          # data definitions
-│       └── display.py            # formatting for text output
+│       ├── __main__.py           # `python -m src.gui`
+│       ├── app.py                # main App class, rendering, input
+│       ├── theme.py              # palette, layout constants
+│       └── widgets.py            # Button and panel helpers
 └── tests/
     └── test_shop_distribution.py # statistical tests on shop generation
 ```
@@ -457,15 +462,37 @@ hexfall/
 
 ## Running the Prototype
 
-Once the initial implementation is complete:
+Clone the repo and launch either the text or the graphical prototype.
+
+### Text prototype (no dependencies)
 
 ```bash
 git clone https://github.com/chloevinky/TeamFightingCivilzations.git
-cd hexfall
-python -m src.prototype.main
+cd TeamFightingCivilzations
+python -m src.main
 ```
 
-No dependencies to install. Requires Python 3.11 or later.
+### Graphical prototype (pygame)
+
+```bash
+pip install -r requirements.txt
+python -m src.gui
+```
+
+Requires Python 3.11+ and pygame 2.5+. Pass `--seed=N` for a reproducible run.
+
+**Controls:**
+
+- **Left click** a shop card to buy.
+- **Right click** a shop card to lock / unlock (5g).
+- **`+`** buttons in the paths panel invest 1 AP in that path.
+- **Muster** buttons appear for invested paths and cost 1 AP.
+- **Reroll** and **End Turn** buttons sit in the bottom bar.
+- Keyboard: **`1`–`8`** buy, **`R`** reroll, **`Space`** end turn, **`Esc`** quit.
+
+The graphical prototype is a visual skin over the text shop loop — all game
+logic lives in `src/game_state.py`, `src/shop.py`, and `src/paths.py` and is
+shared between the two front ends.
 
 ---
 
