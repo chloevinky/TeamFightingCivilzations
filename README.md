@@ -335,18 +335,19 @@ Each AI civilization has personality weights assigned at game start:
 
 ## Development Roadmap
 
-Development proceeds in phases. Each phase builds on the previous and is playable on its own.
+Phases 1–9 are all wired up in the current prototype.  Phase 10 (a non-pygame
+production engine) is intentionally still on the wishlist.
 
-1. **Shop loop prototype** (current phase) — text UI, validates the core shop mechanics.
-2. **Economy layer** — abstract cities that generate gold and science per turn.
-3. **Tech tree and eras** — passive research, era transitions expand shop pool.
-4. **Path trait bleed and targeted muster** — full skill tree mechanics.
-5. **Diplomacy panel** — proactive diplomacy alongside shop events.
-6. **Army cap and management** — enforce caps, display army composition.
-7. **Battle prototype** — separate tactical grid, auto-resolve combat.
-8. **AI opponents** — parallel AI civilizations running their own shops and economies.
-9. **Map generation and territory** — hex map, city placement, border growth.
-10. **GUI migration** — move from text UI to Godot or Arcade once mechanics are locked.
+1. **Shop loop prototype** ✅ — text UI + pygame UI for the shop.
+2. **Economy layer** ✅ — cities with population, food/gold/science yields.
+3. **Tech tree and eras** ✅ — six branches, seven eras, era thresholds.
+4. **Path trait bleed and targeted muster** ✅ — invest, muster, trait table.
+5. **Diplomacy panel** ✅ — open borders, NAP, alliance, denounce, tribute, war.
+6. **Army cap and management** ✅ — `Army screen`, cap formula honored.
+7. **Battle prototype** ✅ — 8x8 grid auto-resolver with positioning.
+8. **AI opponents** ✅ — three archetypes with personality-weighted behavior.
+9. **Map generation and territory** ✅ — procedural hex map, fog of war, borders.
+10. **GUI migration** — move from pygame to a richer engine once mechanics are locked.
 
 ---
 
@@ -443,17 +444,32 @@ TeamFightingCivilzations/
 │   ├── __init__.py
 │   ├── main.py                   # text REPL, command parser
 │   ├── config.py                 # tunable constants
-│   ├── game_state.py             # GameState class
+│   ├── game_state.py             # player civ state (the original GameState)
+│   ├── civilization.py           # AI civ data + personality archetypes
+│   ├── world.py                  # World container: turn loop, civs, map
+│   ├── ai.py                     # AI behavior loop
 │   ├── shop.py                   # Shop class, generation logic
 │   ├── paths.py                  # path investment, weighting, trait bleed
-│   ├── offerings.py              # data definitions
+│   ├── offerings.py              # units / buildings / wonders / events
+│   ├── tech.py                   # tech tree branches and research
+│   ├── hexmap.py                 # procedural hex map, terrain, fog of war
+│   ├── cities.py                 # City model, organic growth, founding
+│   ├── diplomacy.py              # relations, NAPs, alliances
+│   ├── battle.py                 # 8x8 tactical grid auto-resolver
 │   ├── display.py                # text formatting
 │   └── gui/                      # graphical prototype (pygame)
 │       ├── __init__.py
 │       ├── __main__.py           # `python -m src.gui`
-│       ├── app.py                # main App class, rendering, input
+│       ├── app.py                # main App class, top bar, screen routing
 │       ├── theme.py              # palette, layout constants
-│       └── widgets.py            # Button and panel helpers
+│       ├── widgets.py            # Button and panel helpers
+│       └── screens/              # one module per screen
+│           ├── map_screen.py
+│           ├── shop_screen.py
+│           ├── tech_screen.py
+│           ├── diplomacy_screen.py
+│           ├── army_screen.py
+│           └── battle_screen.py
 └── tests/
     └── test_shop_distribution.py # statistical tests on shop generation
 ```
@@ -483,16 +499,23 @@ Requires Python 3.11+ and pygame 2.5+. Pass `--seed=N` for a reproducible run.
 
 **Controls:**
 
-- **Left click** a shop card to buy.
-- **Right click** a shop card to lock / unlock (5g).
-- **`+`** buttons in the paths panel invest 1 AP in that path.
-- **Muster** buttons appear for invested paths and cost 1 AP.
-- **Reroll** and **End Turn** buttons sit in the bottom bar.
-- Keyboard: **`1`–`8`** buy, **`R`** reroll, **`Space`** end turn, **`Esc`** quit.
+- Top-bar **tabs** switch between MAP / SHOP / TECH / DIPLOMACY / ARMY / BATTLE.
+- **Tab** key cycles through screens; **Space** ends the turn; **Esc** quits.
+- **MAP**: click a tile to inspect it; "Found City (150g)" appears for buildable
+  player-owned tiles.
+- **SHOP**: left-click a card to buy, right-click to lock/unlock (5g).
+  Keyboard: **1**-**8** buy, **R** reroll.
+- **TECH**: click any era-available tech to start researching it.
+- **DIPLOMACY**: pick a discovered civ on the left, run actions on the right
+  (open borders, NAP, alliance, denounce, demand tribute, declare war).
+- **ARMY**: roster view with stats and tier-up hints.
+- **BATTLE**: drag your units between cells on the left half of the 8×8 grid,
+  then "Begin Battle" to auto-resolve.  Player-involved battles open this
+  screen automatically when their countdown elapses.
 
-The graphical prototype is a visual skin over the text shop loop — all game
-logic lives in `src/game_state.py`, `src/shop.py`, and `src/paths.py` and is
-shared between the two front ends.
+All game logic lives in `src/world.py`, `src/game_state.py`, `src/civilization.py`,
+`src/ai.py`, `src/shop.py`, `src/battle.py`, `src/hexmap.py`, `src/cities.py`,
+`src/diplomacy.py`, and `src/tech.py` — the GUI is a thin rendering layer.
 
 ---
 

@@ -6,16 +6,19 @@ iterated without touching the app logic.
 
 from __future__ import annotations
 
+from ..hexmap import Terrain
+
+
 # --- Window / layout ---
 
-WIDTH = 1280
-HEIGHT = 800
+WIDTH = 1360
+HEIGHT = 820
 FPS = 60
 
-TOP_BAR_H = 76
+TOP_BAR_H = 80
 BOTTOM_BAR_H = 96
 LEFT_W = 270
-RIGHT_W = 300
+RIGHT_W = 320
 PAD = 12
 
 SHOP_COLS = 4
@@ -61,6 +64,31 @@ PATH_COLOR = {
     "Navy": (98, 170, 230),
     "Siege": (186, 130, 220),
     "Airforce": (200, 200, 210),
+}
+
+# Terrain colors for the hex map.
+TERRAIN_COLOR = {
+    Terrain.OCEAN:     (28, 60, 110),
+    Terrain.COAST:     (68, 130, 180),
+    Terrain.PLAINS:    (180, 170, 90),
+    Terrain.GRASSLAND: (100, 170, 80),
+    Terrain.FOREST:    (40, 110, 60),
+    Terrain.HILLS:     (130, 110, 70),
+    Terrain.DESERT:    (220, 200, 130),
+    Terrain.MOUNTAIN:  (110, 110, 110),
+}
+
+FOG_UNSEEN_COLOR = (10, 12, 18)
+FOG_SEEN_OVERLAY = (0, 0, 0, 110)
+
+# Civ default colors (used as border/accent).
+CIV_COLORS = {
+    "Player":   (100, 200, 255),
+    "Caesarius": (220, 96, 96),
+    "Mercatia":  (228, 180, 88),
+    "Lyceum":    (140, 200, 240),
+    "Khanate":   (220, 130, 180),
+    "Albion":    (160, 220, 170),
 }
 
 

@@ -1,12 +1,21 @@
-"""Central mutable game state for the shop loop prototype."""
+"""Player civilization state for the shop loop / full Hexfall prototype.
+
+`GameState` represents the *player's* civ.  AI civs use the lighter
+`Civilization` model.  The original shop-loop tests construct GameState
+directly with no arguments, so the existing public surface is preserved.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from . import config
 from .offerings import Era, PATHS, Unit, UNITS, TIER_UP_REQUIREMENTS
+from .tech import ResearchState
+
+if TYPE_CHECKING:
+    from .cities import City
 
 
 @dataclass
@@ -20,32 +29,47 @@ class GameState:
         default_factory=lambda: {p: 0 for p in PATHS}
     )
 
-    # army is a list of Unit instances (same Unit reference duplicated per copy)
     army: list[Unit] = field(default_factory=list)
     buildings: list[str] = field(default_factory=list)
     wonders: list[str] = field(default_factory=list)
 
     # shop-related turn state
     rerolls_this_turn: int = 0
-    locked_slot: Optional[int] = None  # index into current shop
+    locked_slot: Optional[int] = None
     pity_counter: int = 0
     mustered_this_turn: bool = False
 
-    # transient log that display.py renders after each command
     log: list[str] = field(default_factory=list)
+
+    # --- Full-game additions (no-op for the bare shop-loop tests) ---
+    name: str = "Player"
+    cities: list["City"] = field(default_factory=list)
+    research: ResearchState = field(default_factory=ResearchState)
+    owned_resources: set[str] = field(default_factory=set)
+    discovered: set[str] = field(default_factory=set)
+    capital_lost: bool = False
+    eliminated: bool = False
+    # bonuses granted by wonders
+    extra_shop_slot: int = 0
+    extra_free_refresh: int = 0
+    permanent_ap_bonus: int = 0
+    space_elevator_turns: int = 0
+    pity_reduction: int = 0  # Great Library
 
     def __post_init__(self) -> None:
         if not self.army:
             warrior = next(u for u in UNITS if u.name == "Warrior")
             self.army = [warrior, warrior]
+        # Make sure new paths (e.g. Airforce) appear in the dict.
+        for p in PATHS:
+            self.path_investment.setdefault(p, 0)
 
     # --- turn lifecycle ---
 
     def begin_turn(self) -> None:
-        self.ap = config.ap_for_turn(self.turn)
+        self.ap = config.ap_for_turn(self.turn) + self.permanent_ap_bonus
         self.rerolls_this_turn = 0
         self.mustered_this_turn = False
-        # locked_slot persists; caller rebuilds shop preserving locked offering
 
     def end_turn(self) -> None:
         self.turn += 1
@@ -53,7 +77,6 @@ class GameState:
     # --- army ops ---
 
     def add_unit(self, unit: Unit) -> list[str]:
-        """Append a unit and resolve cascading tier-ups. Return log lines."""
         self.army.append(unit)
         return self._resolve_tier_ups()
 
@@ -71,7 +94,6 @@ class GameState:
                 upgraded = _next_tier(unit)
                 if upgraded is None:
                     continue
-                # consume 3, produce 1
                 for _ in range(config.TIER_UP_COUNT):
                     self.army.remove(unit)
                 self.army.append(upgraded)
@@ -96,17 +118,32 @@ class GameState:
             return None
         return max(invested, key=invested.get)
 
+    @property
+    def capital(self) -> Optional["City"]:
+        for c in self.cities:
+            if c.capital:
+                return c
+        return None
+
+    @property
+    def alive(self) -> bool:
+        return not self.eliminated
+
+    def army_strength(self) -> int:
+        return sum(u.attack + u.hp // 4 for u in self.army)
+
+    def total_pop(self) -> int:
+        return sum(c.population for c in self.cities)
+
 
 def _next_tier(unit: Unit) -> Optional[Unit]:
-    """Return the generic same-path tier-up (no resource variant) for a unit."""
+    """Return the generic same-path tier-up for a unit (no resource variant)."""
     if unit.required_resource is not None:
-        # resource-gated variants do not auto-combine in the prototype
         return None
     target_tier = unit.tier + 1
     req = TIER_UP_REQUIREMENTS.get((unit.path, target_tier), "MISSING")
     if req == "MISSING":
         return None
-    # pick the first unit in the same path at target_tier with no resource req
     for candidate in UNITS:
         if (
             candidate.path == unit.path
