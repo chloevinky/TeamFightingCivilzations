@@ -84,8 +84,12 @@ class Shop:
         # Pity guarantee: if pity counter reached threshold, ensure a unit from
         # the deepest-invested path is present. Swap one non-locked unit slot.
         deepest = self.state.deepest_path()
+        pity_threshold = max(
+            1,
+            config.PITY_TIMER_THRESHOLD - getattr(self.state, "pity_reduction", 0),
+        )
         if (
-            self.state.pity_counter >= config.PITY_TIMER_THRESHOLD
+            self.state.pity_counter >= pity_threshold
             and deepest is not None
             and not any(
                 isinstance(o, Unit) and o.path == deepest for o in chosen
@@ -122,12 +126,13 @@ class Shop:
             if special_pool:
                 chosen.append(rng.choice(special_pool))
 
-        # Flex slots
-        while len(chosen) < config.SHOP_SIZE:
+        # Flex slots (Grand Bazaar wonder grants +1 shop slot)
+        target_size = config.SHOP_SIZE + getattr(self.state, "extra_shop_slot", 0)
+        while len(chosen) < target_size:
             chosen.append(self._draw_flex(units_pool, buildings_pool, events_pool, chosen))
 
         # Trim in case we overshot via the pity insertion
-        if len(chosen) > config.SHOP_SIZE:
+        if len(chosen) > target_size:
             # never drop the locked one
             trimmed: list[Offering] = []
             if locked is not None:
@@ -136,7 +141,7 @@ class Shop:
                 if o is locked:
                     continue
                 trimmed.append(o)
-                if len(trimmed) == config.SHOP_SIZE:
+                if len(trimmed) == target_size:
                     break
             chosen = trimmed
 
